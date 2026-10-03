@@ -325,9 +325,6 @@ export const zhHantCommandCenter = {
     manageProfiles: '管理設定檔…',
     fleet: {
       localDevice: '此裝置（本機後端——若未安裝 Hermes 則會安裝，否則開啟新的工作階段）',
-      switchDeviceTitle: '切換到此裝置？',
-      switchDeviceDesc: '這會在這台電腦上開啟新的工作階段。目前的對話仍留在另一個閘道。',
-      switchDeviceConfirm: '切換',
       installDeviceTitle: '切換到此裝置？',
       installDeviceDesc: '這會在本機安裝 Hermes，然後在這台電腦上開啟新的工作階段。確認之前不會開始安裝。',
       installDeviceConfirm: '本機安裝',

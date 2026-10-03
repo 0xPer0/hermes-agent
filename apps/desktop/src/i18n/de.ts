@@ -3607,10 +3607,6 @@ export const deOverrides = {
       deleteOn: gateway => ` auf ${gateway}`,
       localDevice:
         'Dieses Gerät (lokales Backend — installiert Hermes, falls es fehlt, sonst öffnet es eine neue Sitzung)',
-      switchDeviceTitle: 'Zu diesem Gerät wechseln?',
-      switchDeviceDesc:
-        'Das öffnet eine neue Sitzung auf diesem Computer. Das aktuelle Gespräch bleibt auf dem anderen Gateway.',
-      switchDeviceConfirm: 'Wechseln',
       installDeviceTitle: 'Zu diesem Gerät wechseln?',
       installDeviceDesc:
         'Hermes wird lokal installiert und danach eine neue Sitzung auf diesem Computer geöffnet. Ohne Bestätigung startet keine Installation.',

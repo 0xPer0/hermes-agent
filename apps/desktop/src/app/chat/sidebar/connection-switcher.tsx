@@ -100,8 +100,7 @@ export function ConnectionSwitcher({ compact = false, onConnect }: { compact?: b
       if (connection?.kind === 'local' && connectionId !== activeConnectionId) {
         const accepted = await requestLocalDevice({
           connectionId,
-          label: connection.label,
-          replaceCenter: true
+          label: connection.label
         })
 
         if (!accepted) {

@@ -331,16 +331,15 @@ export function ProfileRail() {
       return
     }
 
-    // Probe spinner only. The dialog — install confirm or fresh-session cue —
-    // must be on screen before selectConnection replaces the center.
+    // Probe spinner only. The install confirm must be on screen before
+    // selectConnection can reach runBootstrap. An installed runtime switches
+    // immediately, the same as any other gateway.
     const key = fleetRouteKey(agent.connectionId, agent.profile)
     setPendingRoute(key)
 
     void requestLocalDevice({
       connectionId: agent.connectionId,
-      label: agent.connectionLabel,
-      profile: agent.profile,
-      replaceCenter: agent.profile === 'default'
+      label: agent.connectionLabel
     }).then(accepted => {
       setPendingRoute(current => (current === key ? null : current))
 

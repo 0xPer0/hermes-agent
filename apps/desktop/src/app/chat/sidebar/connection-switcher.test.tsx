@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { atom } from 'nanostores'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DesktopConnectionsRegistry } from '@/global'
 import { $findInPage } from '@/store/find-in-page'
@@ -25,13 +25,24 @@ vi.mock('@/store/connections', () => ({
   selectConnection: vi.fn(async () => undefined)
 }))
 
+const probeLocalBackend = vi.fn(async () => ({ bootstrapNeeded: false }))
+
 vi.mock('@/i18n', () => ({
   useI18n: () => ({
     t: {
+      common: { cancel: 'Cancel', confirm: 'Confirm', done: 'Done', loading: 'Loading' },
+      errors: { genericFailure: 'Something went wrong' },
       profiles: {
         switchConnectionFailed: (name: string) => `Could not connect to ${name}`,
         switchToConnection: (name: string) => `Switch to ${name}`,
-        connectGateway: 'Manage gateways…'
+        connectGateway: 'Manage gateways…',
+        fleet: {
+          connectExistingInstead: 'Connect to existing instead',
+          installDeviceConfirm: 'Install locally',
+          installDeviceDesc:
+            'This will install Hermes locally, then open a fresh session on this computer. Nothing is installed until you confirm.',
+          installDeviceTitle: 'Switch to This device?'
+        }
       },
       settings: {
         connections: {
@@ -68,6 +79,11 @@ const registry = (connections: ReturnType<typeof connection>[]): DesktopConnecti
   primary: connections[0]?.id ?? 'local',
   secureTokenStorage: true,
   version: 2
+})
+
+beforeEach(() => {
+  probeLocalBackend.mockResolvedValue({ bootstrapNeeded: false })
+  ;(window as { hermesDesktop?: unknown }).hermesDesktop = { probeLocalBackend }
 })
 
 afterEach(() => {
@@ -247,5 +263,52 @@ describe('ConnectionSwitcher', () => {
 
     fireEvent.pointerDown(trigger, { button: 0, pointerType: 'mouse' })
     expect(screen.getByRole('menuitemradio', { name: 'W2Probe' })).toBeTruthy()
+  })
+
+  it('switches to an already-installed This device without asking', async () => {
+    $activeConnectionId.set('homelab')
+    $connectionsRegistry.set(registry([connection('local', 'This device', 'local'), connection('homelab', 'Homelab')]))
+    render(<ConnectionSwitcher onConnect={onConnect} />)
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Registered gateways: Homelab' }), {
+      button: 0,
+      pointerType: 'mouse'
+    })
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'This device' }))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.queryByRole('dialog', { name: 'Switch to This device?' })).toBeNull()
+    expect(selectConnection).toHaveBeenCalledWith('local')
+  })
+
+  it('still asks before installing Hermes when This device has no local runtime', async () => {
+    probeLocalBackend.mockResolvedValue({ bootstrapNeeded: true })
+    $activeConnectionId.set('homelab')
+    $connectionsRegistry.set(registry([connection('local', 'This device', 'local'), connection('homelab', 'Homelab')]))
+    render(<ConnectionSwitcher onConnect={onConnect} />)
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Registered gateways: Homelab' }), {
+      button: 0,
+      pointerType: 'mouse'
+    })
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'This device' }))
+
+    expect(selectConnection).not.toHaveBeenCalled()
+    expect(
+      await screen.findByText(
+        'This will install Hermes locally, then open a fresh session on this computer. Nothing is installed until you confirm.'
+      )
+    ).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Install locally' }))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(selectConnection).toHaveBeenCalledWith('local')
   })
 })

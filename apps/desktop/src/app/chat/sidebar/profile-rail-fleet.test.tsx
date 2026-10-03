@@ -52,10 +52,6 @@ vi.mock('@/i18n', () => ({
           installDeviceTitle: 'Switch to This device?',
           localDevice: 'This device (local backend — installs Hermes if missing, otherwise opens a fresh session)',
           onGateway: (name: string, gateway: string) => `${name} · ${gateway}`,
-          switchDeviceConfirm: 'Switch',
-          switchDeviceDesc:
-            'This opens a fresh session on this computer. The conversation you are in stays on the other gateway.',
-          switchDeviceTitle: 'Switch to This device?',
           switchTo: (name: string, gateway: string) => `Switch to ${name} on ${gateway}`
         },
         importProfile: 'Import profile…',
@@ -531,7 +527,7 @@ describe('ProfileRail fleet mode', () => {
     expect(builder.getAttribute('aria-busy')).toBeNull()
   })
 
-  it('asks before a fresh session when This device is already installed', async () => {
+  it('switches to an already-installed This device without asking', async () => {
     armFleet()
     await renderFleet()
 
@@ -541,20 +537,11 @@ describe('ProfileRail fleet mode', () => {
       })
     )
 
-    expect(selectConnection).not.toHaveBeenCalled()
-    expect(await screen.findByRole('dialog', { name: 'Switch to This device?' })).toBeTruthy()
-    expect(
-      screen.getByText(
-        'This opens a fresh session on this computer. The conversation you are in stays on the other gateway.'
-      )
-    ).toBeTruthy()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Switch' }))
-
     await act(async () => {
       await Promise.resolve()
     })
 
+    expect(screen.queryByRole('dialog', { name: 'Switch to This device?' })).toBeNull()
     expect(selectConnection).toHaveBeenCalledWith('local', { profile: 'default' })
   })
 
@@ -582,8 +569,9 @@ describe('ProfileRail fleet mode', () => {
     expect(await screen.findByText('Connect to existing Hermes')).toBeTruthy()
   })
 
-  it('does not switch when the fresh-session cue is cancelled', async () => {
+  it('does not switch when the install confirm is cancelled', async () => {
     armFleet()
+    probeLocalBackend.mockResolvedValue({ bootstrapNeeded: true })
     await renderFleet()
 
     fireEvent.click(
